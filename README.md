@@ -1,6 +1,6 @@
 # Intro
 
-This repo includes various tools and data snippets that might be helpful in PII experimentation.
+This repo includes various tools and data snippets that might be helpful in PII experimentation and for creating synthetic PII data.
 
 # Licenses
 
