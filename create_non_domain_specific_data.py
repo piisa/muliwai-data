@@ -6,7 +6,7 @@ import itertools
 from re import finditer
 import glob
 import random
-
+from .names import *
 def remove_html_tags(text):
     """Remove html tags from a string"""
     clean = re.compile('<.*?>')
