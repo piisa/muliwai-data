@@ -23,8 +23,7 @@ mt.get_dataset()
 ```
 Minimum example - name substitution:
 ```python
-import datasets
-from source_datasets import Banking77, FinancialPhrasebank
+from source_datasets import FinancialPhrasebank
 from example import process
 
 # load dataset
