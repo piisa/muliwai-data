@@ -31,31 +31,6 @@ def has_any(s, lst):
   return False
 
 
-#Create synethic PII dataset that is not domain specific
-from datasets import load_dataset
-import os
-import re
-import itertools
-from re import finditer
-import glob
-import random
-from .names import *
-def remove_html_tags(text):
-    """Remove html tags from a string"""
-    clean = re.compile('<.*?>')
-    return re.sub(clean, '', text)
-
-def camel_case_split(identifier):
-    matches = finditer('.+?(?:(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|$)', identifier)
-    return [m.group(0) for m in matches]
-
-def stem(s):
-  s = s.replace(".", " ").replace("!", " ").replace("?", " ").replace(",", " ").replace("-", " ").replace(";", " ").replace("'", " '").replace("\"", " \"")
-  sArr = s.lower().split()
-  if len(sArr) > 4:
-    sArr = sArr[:4]
-  s = " ".join([s1[:4] if len(s1) > 4 else s1 for s1 in sArr if s1.strip()])
-  return s
 
 def save_enron_line(l2, prev, o):
         l2 = remove_html_tags(l2)
@@ -533,7 +508,7 @@ def create_cleaned_combined(share_di):
       if not os.path.exists("/content/presidio-research"):
         !git clone https://github.com/microsoft/presidio-research
       import json
-      synth_presidio = json.load(open("/content/presidio-research/data/synth_dataset.txt"))
+      synth_presidio = json.load(open("/content/presidio-research/data/synth_dataset_v2.json"))
       arr = []
       for s in synth_presidio:
         text = s['full_text']
