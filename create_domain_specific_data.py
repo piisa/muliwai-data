@@ -7,6 +7,7 @@ from re import finditer
 import glob
 import random
 from .names import *
+
 def remove_html_tags(text):
     """Remove html tags from a string"""
     clean = re.compile('<.*?>')
@@ -29,23 +30,273 @@ def has_any(s, lst):
     if l in s: return True
   return False
 
+
+#Create synethic PII dataset that is not domain specific
+from datasets import load_dataset
+import os
+import re
+import itertools
+from re import finditer
+import glob
+import random
+from .names import *
+def remove_html_tags(text):
+    """Remove html tags from a string"""
+    clean = re.compile('<.*?>')
+    return re.sub(clean, '', text)
+
+def camel_case_split(identifier):
+    matches = finditer('.+?(?:(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|$)', identifier)
+    return [m.group(0) for m in matches]
+
+def stem(s):
+  s = s.replace(".", " ").replace("!", " ").replace("?", " ").replace(",", " ").replace("-", " ").replace(";", " ").replace("'", " '").replace("\"", " \"")
+  sArr = s.lower().split()
+  if len(sArr) > 4:
+    sArr = sArr[:4]
+  s = " ".join([s1[:4] if len(s1) > 4 else s1 for s1 in sArr if s1.strip()])
+  return s
+
+def save_enron_line(l2, prev, o):
+        l2 = remove_html_tags(l2)
+        l2 = l2.split('-----Original Message-----')[0].strip()
+        l2 = l2.split('---------------------- Forwarded')[0].strip()
+        l2 = l2.split('----- Forwarded')[0].strip()
+        l2 = l2.split('---------From:')[0].strip()
+        l2 = l2.split('**********************************************************************This')[0].strip()
+        l2 = l2.split('**********************************************************************   This')[0].strip()
+        l2 = l2.split('******************************************************************This')[0].strip()
+        l2 = l2.split('*************************************************This')[0].strip()
+        l2 = l2.split('********************************************************************** This')[0].strip()
+        l2 = l2.split('--------- Inline attachment follows')[0].strip()
+        l2 = l2.split('The information contained in this e-mail message and')[0].strip()
+        l2 = l2.split('This message is for the designated recipient')[0].strip()
+        l2 = l2.split('***Please be advised')[0].strip()
+        l2 = l2.split('*******This message')[0].strip()
+        l2 = l2.split('This message (including any attachments) contains')[0].strip()
+        l2 = l2.split('*********************************************************')[0].strip()
+        l2 = l2.split('_________________________________________________________________Get')[0].strip()
+        l2 = l2.split('___________________________________________')[0].strip()
+        l2 = l2.split('__________________________________________________ Do')[0].strip()
+        l2 = l2.replace("\\\"", " \" ").replace("(", " (").replace(")", ") ").replace("[", " [").replace("]", "] ").replace("?", "? ").replace("!", "! ").replace("? ?", "??").replace("! !", "!!").replace(":", ": ").replace("\t", " ").replace("= ", "").replace("=20","").replace("=90","").replace("=018","").replace("=09","").replace("=3D","")
+        l2 = l2.replace(" s ", " 's ").replace(" ve ", " 've ").replace(" re ", " 're ").replace(" ll ", " 'll ").replace(" m ", " 'm ").replace(" t ", " 't ").replace(" d ", " 'd ").replace("  ", " ").replace("  ", " ").replace("  ", " ").replace("  ", " ").replace("  ", " ").replace("  ", " ").replace("  ", " ").replace(". . .", "...")
+        l2 = l2.replace(". yahoo", ".yahoo").replace("www. ", "www.").replace(". htm", ".htm").replace(". co", ".co").replace(". org", ".org").replace(". edu", ".edu").replace(". net", ".net").replace(". NET", ".NET").replace(". CO", ".CO").replace(". ORG", ".ORG").replace(". EDU", ".EDU").replace(": //", "://")
+        l2 = l2.replace(": 0", ":0").replace(": 1", ":1").replace(": 2", ":2").replace(": 3", ":3").replace(": 4", ":4").replace(": 5", ":5").replace(": 6", ":6").replace(": 7", ":7").replace(": 8", ":8").replace(": 9", ":9")
+        l2 = l2.replace(". url -", ".url - <<").replace(". doc -", ".doc - <<").replace(". pdf -", ".pdf <<").replace(". xls -", ".xls <<").replace(". url", ".url>>").replace(". doc", ".doc>>").replace(". pdf", ".pdf>>").replace(". xls", ".xls>>").replace("<< ", "<<").replace("> >", " ").replace("  ", " ")
+        l2 = l2.replace(". URL -", ".URL - <<").replace(". DOC -", ".DOC - <<").replace(". PDF -", ".PDF <<").replace(". XLS -", ".xls <<").replace(". URL", ".URL>>").replace(". DOC", ".DOC>>").replace(". PDF", ".PDF>>").replace(". XLS", ".XLS>>").replace("<< ", "<<").replace("> >", " ").replace("  ", " ")
+        l2 = l2.replace("RE:", "").replace("Re:", "").replace("RE: ", "").replace("Re: ", "").replace("Fw: ", "").replace("FW: ", "").replace("FWD: ", "").replace("Fwd: ", "")
+        l2 = l2.replace('Importance: High',':')
+        if "Sent:" in l2: return
+        l2 = l2.replace("...", "... ").replace("\"\"", " \" ").replace("  ", " ").strip(" -:;[]()\=<>\"").rstrip(".!?")
+        l2Arr = l2.split()
+        if len(l2Arr) > 3:
+          l2 = " ".join(itertools.chain(*[camel_case_split(a) for a in l2Arr]))
+          if l2.replace(":", "").replace("[", "").replace("]", "").replace(".", "").replace("!", "").replace("?", "").replace(",", "").replace("-", "").replace(";", "").replace(" ", "").lower() in prev: return
+          l2 = l2.replace("==", "--")
+          l2 = l2.replace("++", "--")
+          l2 = l2.replace("*~", "--")
+          l2 = l2.replace("||", "--")
+          l2 = l2.replace("**", "--")
+          l2 = l2.replace("__", "--")
+          l2 = l2.replace("##", "--")
+          for l3 in l2.split('--'):
+            l3 = l3.strip()
+            if l3:
+              for l4 in l3.split("Subject: "):
+                l4 = l4.strip('=, ')
+                if l4: o.write(l4+"\tenron\n")
+          prev[l2.replace(":", "").replace("[", "").replace("]", "").replace(".", "").replace("!", "").replace("?", "").replace(",", "").replace("-", "").replace(";", "").replace(" ", "").lower()] = 1
+
+def has_any(s, lst):
+  for l in lst:
+    if l in s: return True
+  return False
+
      
-def create_cleaned_combined_domain(share_dir):   
+def create_cleaned_combined(share_di):   
+
   """
   Creates a combined English dataset from different domains useful for doing PII detection. 
-  Domains include casehold (legal), mtsamples (medical), excerpts from a few contrats from the SEC govt website,  
-    financial_phrasebank (business), banking 77 (financial), PII examples from Presidio (generic). 
+  
+  Domains include enron (email), newspop (social media),  casehold (legal), mtsamples (medical), excerpts from a few contrats from the SEC govt website,  
+    financial_phrasebank (business), banking 77 (financial), PII examples from Presidio (generic), civil comments (social media) 
   Do some deduplication and cleanup. 
-  Add some PII as augumentation (TBD: some <PERSON> and <ORG> tags added. Need to add some more categories).
+  Add some PII as augumentation (TBD: some {PERSON} and {ORG} tags added. Need to add some more categories).
 
-  See specific licenses for each dataset. We can probably license the whole thing CC non-commercial?
+  See specific licenses for each dataset. 
   """    
   
 
   prev={}
-  if not os.path.exists("cleaned_combined_domain.tsv"):
-    with open("combined_domain.tsv", "w", encoding="utf8") as o:
-      
+  if not os.path.exists("cleaned_combined_pii.tsv"):
+    with open("combined.tsv", "w", encoding="utf8") as o:
+
+      """
+     @article{Moniz2018MultiSourceSF,
+  title={Multi-Source Social Feedback of Online News Feeds},
+  author={N. Moniz and L. Torgo},
+  journal={ArXiv},
+  year={2018},
+  volume={abs/1801.07055}
+    }   
+      """
+             
+        
+      #https://huggingface.co/datasets/newspop#licensing-information - CC-BY
+      #download using datasets and use
+      dataset = load_dataset("newspop")
+      topics_to_ner = {'economy':None, 'microsoft': '{ORG}', 'obama': '{PUBLIC_FIGURE}', 'palestine': '{GPE}'}
+      for d in (dataset['train'], ):
+        for idx, data in enumerate(d):
+          l2, headline, topic = data['title'], data['headline'], data['topic']
+          ner_label = topics_to_ner.get(topic)
+
+ 
+   
+      #https://huggingface.co/datasets/banking77 under CC-by-4.0
+      """
+      @inproceedings{Casanueva2020,
+    author      = {I{\~{n}}igo Casanueva and Tadas Temcinas and Daniela Gerz and Matthew Henderson and Ivan Vulic},
+    title       = {Efficient Intent Detection with Dual Sentence Encoders},
+    year        = {2020},
+    month       = {mar},
+    note        = {Data available at https://github.com/PolyAI-LDN/task-specific-datasets},
+    url         = {https://arxiv.org/abs/2003.04807},
+    booktitle   = {Proceedings of the 2nd Workshop on NLP for ConvAI - ACL 2020}
+    }
+      """
+      dataset = load_dataset("banking77")
+      for d in (dataset['train'], ):
+        for idx, data in enumerate(d):
+          l2 = data['text']
+          l2 = l2.replace("\n", " ").replace("  ", " ").replace("  ", " ")
+          l2Arr = l2.split()
+          if len(l2Arr) > 3:
+            l2 = l2.replace("bank account", "{FINANCIAL_PRODUCT} account").replace("card", "{FINANCIAL_PRODUCT}").replace("Google Pay", "{ORG} {FINANCIAL_PRODUCT}").replace("Apple pay", "{ORG} {FINANCIAL_PRODUCT}").replace("American Express", "{FINANCIAL_PRODUCT}")
+            l2 = l2.replace("Apple Watch", "{DEVICE}")
+            l2 = l2.replace("US", "{GPE}").replace("EU", "{GPE}").replace("UK", "{GPE}").replace("European Union", "{GPE}").replace("Europe", "{GPE}")
+            if l2.startswith("Why"): continue
+            if (" id " in l2 or "ident" in l2):
+              o.write (l2+random.choice([" My id is {ID}.", " SSN: {ID}.", " My number is {ID}."])+"\tbanking77\n")
+            elif "get " in l2 or "order " in l2 or "like " in l2 or "want " in l2:
+              if random.choice([0,1]):
+                o.write (random.choice(["My name is {PERSON}, DOB: {DATE}. ", "{PERSON} here. ", "I'm {PERSON}. "])+ l2+"\tbanking77\n")
+              else:
+                o.write (l2.strip(' ?.') + random.choice(["? My name is {PERSON}.", "? {PERSON} here.", "? I'm {PERSON}."])+"\tbanking77\n")
+            else:
+              o.write (l2.strip(' ?.') + random.choice(["? Acct #: {CARDINAL}.", "? My name is {PERSON}, DOB: {DATE}, Acct #: {CARDINAL}.", "? Asking for acct #: {CARDINAL}.", "? My name is {PERSON}, DOB: {DATE}"])+"\tbanking77\n")
+
+
+      #https://github.com/reglab/casehold court cases are government works and in the public domain. annotations and selections are under  Apache-2.0 License
+      """
+      @inproceedings{zhengguha2021,
+	title={When Does Pretraining Help? Assessing Self-Supervised Learning for Law and the CaseHOLD Dataset},
+	author={Lucia Zheng and Neel Guha and Brandon R. Anderson and Peter Henderson and Daniel E. Ho},
+	year={2021},
+	eprint={2104.08671},
+	archivePrefix={arXiv},
+	primaryClass={cs.CL},
+	booktitle={Proceedings of the 18th International Conference on Artificial Intelligence and Law},
+	publisher={Association for Computing Machinery}
+  }      
+      """
+      with open(f"{share_dir}/casehold.csv", "rb") as f:
+        while True:
+          line = f.readline().decode()
+          if not line: break
+          line = line.split(",\"")
+          if len(line) >= 2:
+            line = line[1]
+            line = line.split("(<HOLDING>)")
+            if len(line) == 2:
+              s1, s2 = line
+              s1 = s1.replace("  ", " ").replace("  ", " ")
+              s2 = s2.replace("  ", " ").replace("  ", " ")
+              s2 = ' '.join(s2.split(',')[:-6]).strip(';: ')
+              if s2:
+                o.write(s1+' HOLDING: '+s2+"\tcasehold\n")
+              else:
+                o.write(s1+"\tcasehold\n")
+            else:
+              s1 = s1.replace("  ", " ").replace("  ", " ")
+              o.write(s1+"\tcasehold\n")
+
+
+      #from https://www.kaggle.com/wcukierski/enron-email-dataset, originally from https://www.cs.cmu.edu/~enron/ 
+      # public data and partially copyrighted works (annotations) used by permission of authors
+      """
+      Public record data origially published by www.ferc.gov. Subsequent data cleansing by the authors and released
+      "as a resource for researchers who are interested in improving current email tools, or understanding how email is currently used". 
+      """
+      with open(f"{share_dir}/kaggle_enron_emails.csv", "rb") as f:
+        in_message = False
+        l2 = ""
+        while True:
+          l = f.readline()
+          if not l: break
+          l = l.decode().strip()
+          if not in_message and l.startswith("Subject:"):
+            l = l.replace("Subject:", "").strip()
+            if l: l2 = l+ ":"
+          if "X-FileName" in l:
+            in_message = True
+            continue
+          elif "Message-ID" in l:
+            save_enron_line(l2, prev, o)
+            l2 = ""
+            in_message = False
+          if in_message:
+            l2 += " "+l
+            
+        if l2:
+          save_enron_line(l2, prev, o)
+  
+      #https://huggingface.co/datasets/civil_comments - CC0
+      """
+      @article{DBLP:journals/corr/abs-1903-04561,
+  author    = {Daniel Borkan and
+               Lucas Dixon and
+               Jeffrey Sorensen and
+               Nithum Thain and
+               Lucy Vasserman},
+  title     = {Nuanced Metrics for Measuring Unintended Bias with Real Data for Text
+               Classification},
+  journal   = {CoRR},
+  volume    = {abs/1903.04561},
+  year      = {2019},
+  url       = {http://arxiv.org/abs/1903.04561},
+  archivePrefix = {arXiv},
+  eprint    = {1903.04561},
+  timestamp = {Sun, 31 Mar 2019 19:01:24 +0200},
+  biburl    = {https://dblp.org/rec/bib/journals/corr/abs-1903-04561},
+  bibsource = {dblp computer science bibliography, https://dblp.org}
+}
+      """
+      dataset = load_dataset("civil_comments")
+      for d in (dataset['train'], ):
+         for idx, data in enumerate(d):
+          score = sum ([data[feature] for feature in [ 'toxicity', 'severe_toxicity', 'obscene', 'threat', 'insult', 'identity_attack', 'sexual_explicit']])
+          l2 = data['text']
+          l2 = l2.replace("Trump","{PUBLIC_FIGURE}").replace("Trump","{PUBLIC_FIGURE}").replace("Obama","{PUBLIC_FIGURE}").replace("Clinton","{PUBLIC_FIGURE}").replace("Trudeau","{PUBLIC_FIGURE}")
+          l2 = l2.replace('Alaskans', '{NORP}').replace('Alaskan', '{NORP}').replace('Alaska', '{GPE}').replace('Americans', '{NORP}').replace('American', '{NORP}').replace('America', '{GPE}').replace('Oregon', '{GPE}').replace('United States', '{GPE}').replace('Seattle','GPE')
+          l2 = l2.replace("\n", " ").replace("  ", " ").replace("  ", " ")
+          l2Arr = l2.split()
+          has_a_name = has_any(first_names, l2Arr)
+          l2_lower = l2.lower()
+          if random.choice([0,1]) and not has_a_name and "mr." not in l2_lower and "ms." not in l2_lower and  "mrs." not in l2_lower and "president" not in l2_lower and "governor" not in l2_lower and  "mayor" not in l2_lower:
+            continue
+          l2 = " ".join(["{DOMAIN_NAME}" if a.startswith("http") or a.startswith("www") else a for a in l2Arr])
+          if len(l2Arr) > 10 and len(l2Arr) < 50 and (score <= 0.5 or random.randint(0, 10)==0): # having too much toxic content may skew the data
+            if has_a_name or "mr." in l2_lower or "ms." in l2_lower or "mrs." in l2_lower or "president" in l2_lower or "governor" in l2_lower or "mayor" in l2_lower:
+              o.write (l2+"\tcivil_comments\n")
+            elif "you " in l2_lower and random.choice([0,1]):
+              if l2.startswith("you"):
+                l2 = l2.replace("you ", "{PERSON} you ", 1)
+                o.write (l2+"\tcivil_comments\n")
+              elif l2.startswith("You"):
+                l2 = l2.replace("You ", "{PERSON} you ", 1)
+                o.write (l2+"\tcivil_comments\n")
+
       #Download data using datasets from here https://huggingface.co/datasets/financial_phrasebank and put in to share_dir
       for file in glob.glob(f"{share_dir}/FinancialPhraseBank-v.10/*"):
         with open(file, "rb") as f:
@@ -53,8 +304,8 @@ def create_cleaned_combined_domain(share_dir):
             l2 = f.readline().decode()
             if not l2: break
             l2 = l2.replace("\n", " ").replace("  ", " ").replace("  ", " ")
-            l2 = l2.replace("Finland", "<GPE>")
-            l2 = l2.replace("Finnish", "<NATIONALITY>")
+            l2 = l2.replace("Finland", "{GPE}")
+            l2 = l2.replace("Finnish", "{NORP}")
             l2Arr = l2.split()
             if len(l2Arr) > 3:
               l2_lower = l2.lower()
@@ -69,25 +320,25 @@ def create_cleaned_combined_domain(share_dir):
                 l2 = l2.replace(f"also {say}", say)
                 l2 = l2.replace(f"further {say}", say)
                 if f"she {say}" in l2_lower:
-                  l2 = l2.replace(f"she {say}", f"<PERSON> {say}")
+                  l2 = l2.replace(f"she {say}", f"{PERSON} {say}")
                 elif f"he {say}" in l2_lower:
-                  l2 = l2.replace(f"he {say}", f"<PERSON> {say}")
+                  l2 = l2.replace(f"he {say}", f"{PERSON} {say}")
                 elif f", {say}" not in l2_lower and f"'' {say}" not in l2_lower:
                   if has_any(first_names, l2Arr) or "mr" in l2_lower or "mrs" in l2_lower or "ms" in l2_lower or "ceo" in l2_lower or "manager" in l2_lower or "director" in l2_lower:
                     if random.randint(0, 10)==0:
-                      l2 = l2.replace(say, random.choice([f"'s spokeswoman <PERSON> {say}", f"'s spokesman <PERSON> {say}", f"'s spokesperson <PERSON> {say}"]))
+                      l2 = l2.replace(say, random.choice(["'s spokeswoman {PERSON} "+say, "'s spokesman {PERSON} "+say, f"'s spokesperson {PERSON} "+say]))
                   else:
-                    l2 = l2.replace(say, random.choice([f"'s spokeswoman <PERSON> {say}", f"'s spokesman <PERSON> {say}", f"'s spokesperson <PERSON> {say}"]))
+                    l2 = l2.replace(say, random.choice(["'s spokeswoman {PERSON} "+say, "'s spokesman {PERSON} "+say, f"'s spokesperson {PERSON} "+say]))
                 #print (l2)
               if need_processing:
                 if has_any(first_names, l2Arr) or"mr" in l2_lower or "mrs" in l2_lower or "ms" in l2_lower or "ceo" in l2_lower or "manager" in l2_lower or "director" in l2_lower:
                     if random.randint(0, 10)==0:
-                      l2= (l2.strip(" .") + random.choice([" according to company spokesperson <PERSON>", " said spokesman <PERSON>", ", said company spokeswoman <PERSON>", ", acknowledged <ORG>'s <PERSON>", ", reiterated <PERSON>",]))
+                      l2= (l2.strip(" .") + random.choice([" according to company spokesperson {PERSON}", " said spokesman {PERSON}", ", said company spokeswoman {PERSON}", ", acknowledged {ORG}'s {PERSON}", ", reiterated {PERSON}",]))
                 else:
                   if random.choice([0,1]):
-                    l2= (l2.strip(" .") + random.choice([" according to spokesperson <PERSON>", ", said company spokesman <PERSON>", " said spokeswoman <PERSON>", ", acknowledged <PERSON>", ", reiterated <ORG> CEO <PERSON>", " said Ms. <PERSON>", ", said Mr. <PERSON>",  ", stated Ms. <PERSON>", " stated Mr. <PERSON>"]))
+                    l2= (l2.strip(" .") + random.choice([" according to spokesperson {PERSON}", ", said company spokesman {PERSON}", " said spokeswoman {PERSON}", ", acknowledged {PERSON}", ", reiterated {ORG} CEO {PERSON}", " said Ms. {PERSON}", ", said Mr. {PERSON}",  ", stated Ms. {PERSON}", " stated Mr. {PERSON}"]))
                   else:
-                    l2= (random.choice(["According to <ORG> spokesperson <PERSON>, ", "Said company spokesperson <PERSON>, ", "Said CEO <PERSON>, ", "Chairwoman <PERSON>: ","<PERSON> stated: "])+ l2)
+                    l2= (random.choice(["According to {ORG} spokesperson {PERSON}, ", "Said company spokesperson {PERSON}, ", "Said CEO {PERSON}, ", "Chairwoman {PERSON}: ","{PERSON} stated: "])+ l2)
               o.write (l2+"\tfinancial_phrasebank\n")
               
       #from mtsmples.  https://www.kaggle.com/tboyle10/medicaltranscriptions#mtsamples.csv.  see https://www.mtsamples.com/ 
@@ -116,33 +367,46 @@ def create_cleaned_combined_domain(share_dir):
             #print (keywords.strip().split(","))
             l = '. '.join(arr).replace(', "', '. ').replace('",', ' ').replace("..",".").replace('.  .','. ').replace(' .','.').replace('  ', ' ').replace('  ', ' ').replace('  ', ' ')
             if 'ABCD' in l:
-              l = l.replace("ABCD", "<ORG>")
+              l = l.replace("ABCD", "{ORG}")
             if 'MM/DD/YYYY' in l:
-              l = l.replace('MM/DD/YYYY', '<DATE>')
+              l = l.replace('MM/DD/YYYY', '{DATE}')
             if 'ABC' in l:
-              l = l.replace("ABC", '<PERSON>')
+              l = l.replace("ABC", '{PERSON}')
             if 'Mr. A' in l:
-              l = l.replace("Mr. A", 'Mr. <PERSON5>')
+              l = l.replace("Mr. A", 'Mr. {PERSON_5}')
             if 'Ms. A' in l:
-              l = l.replace("Ms. A", 'Ms. <PERSON5>')
+              l = l.replace("Ms. A", 'Ms. {PERSON_5}')
             if 'XYZ' in l:
-              l = l.replace("XYZ", '<PERSON2>')
+              l = l.replace("XYZ", '{PERSON_2}')
             if 'XXXX' in l:
-              l = l.replace("XXXX", '<PERSON3>')
+              l = l.replace("XXXX", '{PERSON_3}')
             if 'Ms. X' in l:
-              l = l.replace("Ms. X", 'Ms. <PERSON4>')
+              l = l.replace("Ms. X", 'Ms. {PERSON_4}')
             if 'Mr. X' in l:
-              l = l.replace("Mr. X", 'Mr. <PERSON4>')
+              l = l.replace("Mr. X", 'Mr. {PERSON_4}')
             if 'Dr. X' in l:
-              l = l.replace("Dr. X", 'Dr. <PERSON3>')
-            if '<PERSON> Avenue' in l:
-              l = l.replace('<PERSON> Avenue', '<STREET_ADDRESS>')
-            if 'at <PERSON' in l: 
-              l = l.replace('at <PERSON', 'at <LOC')
-            if 'in <PERSON' in l:
-              l = l.replace('in <PERSON', 'in <LOC')
-            if '<PERSON2> County' in l:
-              l = l.replace('<PERSON2> County', '<ORG2> County')
+              l = l.replace("Dr. X", 'Dr. {PERSON_3}')
+            if '{PERSON} Avenue' in l:
+              l = l.replace('{PERSON} Avenue', '{ADDRESS}')
+            if 'at {PERSON_1}' in l: 
+              l = l.replace('at {PERSON_1}', 'at {LOC}')
+            if 'in {PERSON_1}' in l:
+              l = l.replace('in {PERSON_1}', 'in {LOC}')
+            if 'at {PERSON_2}' in l: 
+              l = l.replace('at {PERSON_2}', 'at {LOC}')
+            if 'in {PERSON_2}' in l:
+              l = l.replace('in {PERSON_2}', 'in {LOC}')
+            if 'at {PERSON_3}' in l: 
+              l = l.replace('at {PERSON_3}', 'at {LOC}')
+            if 'in {PERSON_3}' in l:
+              l = l.replace('in {PERSON_3}', 'in {LOC}')
+            if 'at {PERSON_4}' in l: 
+              l = l.replace('at {PERSON_4}', 'at {LOC}')
+            if 'in {PERSON_4}' in l:
+              l = l.replace('in {PERSON4_}', 'in {LOC}')
+            
+            if '{PERSON_2} County' in l:
+              l = l.replace('{PERSON_2} County', '{ORG_2} County')
             #MR#
             l = l.strip(' "')
             o.write(l+"\tmtsamples\n") 
@@ -157,19 +421,19 @@ def create_cleaned_combined_domain(share_dir):
           l2 = l2.replace("\n", " ").replace("  ", " ").replace("  ", " ")
           l2Arr = l2.split()
           if len(l2Arr) > 3:
-            l2 = l2.replace("bank account", "account").replace("Google Pay", "<ORG> account").replace("Apple pay", "<ORG> account").replace("American Express", "<ORG> account")
+            l2 = l2.replace("bank account", "account").replace("Google Pay", "{ORG} account").replace("Apple pay", "{ORG} account").replace("American Express", "{ORG} account")
             l2 = l2.replace("Apple Watch", "device")
-            l2 = l2.replace("US", "<GPE>").replace("EU", "<GPE>").replace("UK", "<GPE>").replace("European Union", "<GPE>").replace("Europe", "<GPE>")
+            l2 = l2.replace("US", "{GPE}").replace("EU", "{GPE}").replace("UK", "{GPE}").replace("European Union", "{GPE}").replace("Europe", "{GPE}")
             if l2.startswith("Why"): continue
             if (" id " in l2 or "ident" in l2):
-              o.write (l2+random.choice([" My id is <ID>.", " SSN: <ID>.", " My number is <ID>."])+"\tbanking77\n")
+              o.write (l2+random.choice([" My id is {ID}.", " SSN: {ID}.", " My number is {ID}."])+"\tbanking77\n")
             elif "get " in l2 or "order " in l2 or "like " in l2 or "want " in l2:
               if random.choice([0,1]):
-                o.write (random.choice(["My name is <PERSON>, DOB: <DATE>. ", "<PERSON> here. ", "I'm <PERSON>. "])+ l2+"\tbanking77\n")
+                o.write (random.choice(["My name is {PERSON}, DOB: {DATE}. ", "{PERSON} here. ", "I'm {PERSON}. "])+ l2+"\tbanking77\n")
               else:
-                o.write (l2.strip(' ?.') + random.choice(["? My name is <PERSON>.", "? <PERSON> here.", "? I'm <PERSON>."])+"\tbanking77\n")
+                o.write (l2.strip(' ?.') + random.choice(["? My name is {PERSON}.", "? {PERSON} here.", "? I'm {PERSON}."])+"\tbanking77\n")
             else:
-              o.write (l2.strip(' ?.') + random.choice(["? My name is <PERSON>, DOB: <DATE>, Acct #: <ID>.", "? Asking for acct #: <ID>.", "? My name is <PERSON>, DOB: <DATE>, Acct #: <ID>."])+"\tbanking77\n")
+              o.write (l2.strip(' ?.') + random.choice(["? My name is {PERSON}, DOB: {DATE}, Acct #: {ID}.", "? Asking for acct #: {ID}.", "? My name is {PERSON}, DOB: {DATE}, Acct #: {ID}."])+"\tbanking77\n")
 
 
       #https://github.com/reglab/casehold
@@ -245,9 +509,9 @@ def create_cleaned_combined_domain(share_dir):
         else:
           pronoun = "she"
           pronoun2 = "her"
-        line = line.replace("My son ", "<PERSON>, male ").replace("My daughter ", "<PERSON>, female ").replace("Son ", "<PERSON>, a male ").replace("Daughter ", "<PERSON>, a female ").replace("daughter ", "<PERSON>, a female ").replace(" son ", " <PERSON>, a female ")
+        line = line.replace("My son ", "{PERSON}, male ").replace("My daughter ", "{PERSON}, female ").replace("Son ", "{PERSON}, a male ").replace("Daughter ", "{PERSON}, a female ").replace("daughter ", "{PERSON}, a female ").replace(" son ", " {PERSON}, a female ")
         line = line.replace("I'm", f"{pronoun} is").replace("I've", f"{pronoun} has").replace("Am ", "Is ").replace("I have", f"{pronoun} has").replace("I am", f"{pronoun} is").replace("I think", f"{pronoun} thinks").replace("Should I be", f"{pronoun} should be").replace("I ", f"{pronoun} ")
-        line = line.replace(" are ", "is ").replace(" us ", " them ").replace(" my ", f"{pronoun2} ").replace(" me ", f"{pronoun2} ").replace("Me ", f"{pronoun2} ")
+        line = line.replace(" are ", " is ").replace(" us ", " them ").replace(" my ", f" {pronoun2} ").replace(" me ", f" {pronoun2} ").replace("Me ", f"{pronoun2} ")
         line = line.split(".")
         if line:
           line = [l for l in line if l.strip() and not l.endswith("?") and l.lower().split()[0] not in ("what", "where",  "please", "thank")]
@@ -257,12 +521,12 @@ def create_cleaned_combined_domain(share_dir):
           line = line.replace("My ", "").replace("myself ", "")
           line = line.replace("Should she ", "she should ").replace("Should he ", "he should ")
           if line.startswith("she "):
-            line = line.replace("she ", "<PERSON>, a female, ", 1)
+            line = line.replace("she ", "{PERSON}, a female, ", 1)
           elif line.startswith("he "):
-            line = line.replace("he ", "<PERSON>, a male, ", 1)
-          line = line.replace("COVID-19", "<DISEASE>").replace("COVID 19", "<DISEASE>").replace("COVID19", "<DISEASE>").replace("COVID", "<DISEASE>")
-          line = line.replace("Asian", "<LOCATION>")
-          line = line.replace("France", "<GPE>").replace("Vietnam", "<GPE>").replace("India", "<GPE>").replace("US", "<GPE>")
+            line = line.replace("he ", "{PERSON}, a male, ", 1)
+          line = line.replace("COVID-19", "{DISEASE}").replace("COVID 19", "{DISEASE}").replace("COVID19", "{DISEASE}").replace("COVID", "{DISEASE}")
+          line = line.replace("Asian", "{NORP}")
+          line = line.replace("France", "{GPE}").replace("Vietnam", "{GPE}").replace("India", "{GPE}").replace("US", "{GPE}")
           o.write (line+"\tmedical_dialog\n")
           
 
@@ -279,7 +543,7 @@ def create_cleaned_combined_domain(share_dir):
         for tpl in ner:
           t1, label = tpl
           if t1.strip():
-            text = text.replace(t1, "<"+label+">") #+str(_idx)
+            text = text.replace(t1, "{"+label+"}") #+str(_idx)
             #_idx += 1
         if text:
           o.write (text+"\tpresidio_synth\n")
@@ -320,10 +584,11 @@ This FIRST AMENDMENT TO LOAN AND SECURITY AGREEMENT (this “Amendment”) is da
         if line:
           o.write (line+"\tsec_contracts\n")
 
-  os.system("sort --parallel=32 combined_domain.tsv -o combined_domain.tsv")
+        
+  os.system("sort --parallel=32 combined.tsv -o combined.tsv")
 
-  with open("combined_cleaned_domain.tsv", "w", encoding="utf8") as o:
-    with open("combined_domain.tsv", "rb") as f:
+  with open("combined_cleaned.tsv", "w", encoding="utf8") as o:
+    with open("combined.tsv", "rb") as f:
       prev=""
       while True:
         l = f.readline().decode()
@@ -345,8 +610,6 @@ This FIRST AMENDMENT TO LOAN AND SECURITY AGREEMENT (this “Amendment”) is da
         o.write (prev.lstrip(':;.+- ')+"\n")
 
   
-  os.system("sort --parallel=32 combined_cleaned_domain.tsv -o combined_cleaned_domain.tsv")
-  os.system(f"cp combined_cleaned_domain.tsv {share_dir}/combined_cleaned_domain.tsv")
+  os.system("sort --parallel=32 combined_cleaned.tsv -o combined_cleaned.tsv")
+  os.system(f"cp combined_cleaned.tsv {share_dir}/combined_cleaned.tsv")
   #os.system("rm ./combined.tsv")
-
-#create_cleaned_combined_domain()
